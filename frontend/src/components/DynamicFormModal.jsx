@@ -167,7 +167,9 @@ export default function DynamicFormModal({ template, entry, onClose, onSave }) {
       });
     } else {
       template.fields.forEach(f => {
-        initData[f.id] = f.type === 'checkbox' ? [] : (f.default_value || '');
+        if (f.type === 'checkbox') initData[f.id] = [];
+        else if (['multiple_choice_grid', 'tick_box_grid'].includes(f.type)) initData[f.id] = {};
+        else initData[f.id] = f.default_value || '';
       });
     }
     setFormData(initData);
@@ -290,12 +292,67 @@ export default function DynamicFormModal({ template, entry, onClose, onSave }) {
         );
 
       case 'multiple_choice_grid':
-      case 'tick_box_grid':
+      case 'tick_box_grid': {
+        // Parse rows/columns from options
+        let rows = ['Row 1', 'Row 2'];
+        let columns = ['Column 1', 'Column 2', 'Column 3'];
+        try {
+          const opts = typeof field.options === 'string' ? JSON.parse(field.options) : field.options;
+          if (opts && !Array.isArray(opts)) {
+            rows = opts.rows || rows;
+            columns = opts.columns || columns;
+          }
+        } catch {}
+        const gridVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+        const isCheckbox = fieldType === 'tick_box_grid';
         return (
-          <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: '0.75rem', background: '#f8f9fa', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
-            Grid fields — configure options after saving.
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.875rem' }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 600 }} />
+                  {columns.map((col, ci) => (
+                    <th key={ci} style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid var(--color-border)', color: 'var(--color-midnight)', fontWeight: 600 }}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, ri) => (
+                  <tr key={ri} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: 'var(--color-midnight)', whiteSpace: 'nowrap' }}>{row}</td>
+                    {columns.map((col, ci) => {
+                      const cellKey = `${row}__${col}`;
+                      const isChecked = isCheckbox
+                        ? Array.isArray(gridVal[row]) ? gridVal[row].includes(col) : false
+                        : gridVal[row] === col;
+                      return (
+                        <td key={ci} style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }}>
+                          <input
+                            type={isCheckbox ? 'checkbox' : 'radio'}
+                            name={isCheckbox ? undefined : `grid_${field.id}_row_${ri}`}
+                            checked={isChecked}
+                            onChange={e => {
+                              const newVal = { ...gridVal };
+                              if (isCheckbox) {
+                                const arr = Array.isArray(newVal[row]) ? [...newVal[row]] : [];
+                                newVal[row] = e.target.checked ? [...arr, col] : arr.filter(x => x !== col);
+                              } else {
+                                newVal[row] = col;
+                              }
+                              handleChange(field.id, newVal);
+                            }}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
+      }
 
       case 'image_upload':
       case 'file_upload':
