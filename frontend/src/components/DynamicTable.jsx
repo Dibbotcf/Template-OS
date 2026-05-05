@@ -4,6 +4,7 @@ import { Edit2, Trash2, Eye, Download } from 'lucide-react';
 
 export default function DynamicTable({ template, data, onEdit, onDelete, selectedIds = new Set(), onSelectionChange }) {
   const [viewingEntry, setViewingEntry] = useState(null);
+  const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '');
 
   const parseValue = (raw) => {
     if (!raw) return null;
@@ -37,13 +38,13 @@ export default function DynamicTable({ template, data, onEdit, onDelete, selecte
       return (
         <div style={{ marginTop: '0.25rem' }}>
           <img
-            src={`http://localhost:4000${parsed.url}`}
+            src={`${backendUrl}${parsed.url}`}
             alt={parsed.name}
             style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '12px', objectFit: 'contain', border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
           />
           <div style={{ marginTop: '0.75rem' }}>
             <a
-              href={`http://localhost:4000${parsed.url}`}
+              href={`${backendUrl}${parsed.url}`}
               download={parsed.name}
               target="_blank"
               rel="noreferrer"
@@ -60,7 +61,7 @@ export default function DynamicTable({ template, data, onEdit, onDelete, selecte
     if (field.type === 'file_upload' && parsed?.url) {
       return (
         <a
-          href={`http://localhost:4000${parsed.url}`}
+          href={`${backendUrl}${parsed.url}`}
           download={parsed.name}
           target="_blank"
           rel="noreferrer"

@@ -92,8 +92,11 @@ export default function Sidebar() {
         {/* Dynamic Template Links */}
         {templates.length > 0 && (
           <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--outline-variant)' }}>
-            <div style={{ padding: '0 0.75rem', fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>
-              Your Templates
+            <div style={{ padding: '0 0.75rem', fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Your Templates</span>
+              <span style={{ backgroundColor: 'var(--primary)', color: 'white', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 700, padding: '1px 7px', lineHeight: '1.6' }}>
+                {templates.length}
+              </span>
             </div>
             {templates.map(t => (
               <NavLink key={t.id} to={`/templates/${t.id}`} style={getNavStyle}>

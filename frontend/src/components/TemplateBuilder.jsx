@@ -54,7 +54,12 @@ export default function TemplateBuilder() {
           const res = await api.get(`/templates/${id}`);
           setName(res.data.name);
           setColor(res.data.color);
-          setFields(res.data.fields || []);
+          // Normalize field types: empty string → short_text
+          const normalizedFields = (res.data.fields || []).map(f => ({
+            ...f,
+            type: f.type || 'short_text',
+          }));
+          setFields(normalizedFields);
         } catch (e) {
           console.error(e);
         }
@@ -321,6 +326,55 @@ export default function TemplateBuilder() {
                       {f.type === 'image_upload' ? 'Image Upload Field' : 'File Upload Field'}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Users will see a drag-and-drop upload area when filling this field.</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Linear Scale preview */}
+              {f.type === 'linear_scale' && (
+                <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Linear Scale: 1 → 5</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>1</span>
+                    <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: 'var(--color-border)', position: 'relative' }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60%', background: 'var(--primary)', borderRadius: '3px' }} />
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>5</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Rating preview */}
+              {f.type === 'rating' && (
+                <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Star Rating (1–5)</div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[1,2,3,4,5].map(s => (
+                      <span key={s} style={{ fontSize: '1.6rem', color: s <= 3 ? '#ffc107' : '#ddd' }}>★</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Grid field preview */}
+              {['multiple_choice_grid', 'tick_box_grid'].includes(f.type) && (
+                <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                    {f.type === 'multiple_choice_grid' ? 'Multiple-choice Grid' : 'Tick Box Grid'}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto repeat(3, 1fr)', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    <div />
+                    {['Col 1', 'Col 2', 'Col 3'].map(c => <div key={c} style={{ textAlign: 'center', fontWeight: 600 }}>{c}</div>)}
+                    {['Row 1', 'Row 2'].map(r => (
+                      <React.Fragment key={r}>
+                        <div style={{ fontWeight: 500 }}>{r}</div>
+                        {[1,2,3].map(c => (
+                          <div key={c} style={{ display: 'flex', justifyContent: 'center' }}>
+                            <div style={{ width: '14px', height: '14px', borderRadius: f.type === 'tick_box_grid' ? '3px' : '50%', border: '2px solid var(--primary)', backgroundColor: 'transparent' }} />
+                          </div>
+                        ))}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
               )}

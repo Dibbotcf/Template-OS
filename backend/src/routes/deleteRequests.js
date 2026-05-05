@@ -45,14 +45,14 @@ router.post('/', auth, async (req, res) => {
 
 // GET /api/delete-requests — Admin only
 router.get('/', auth, requireAdmin, async (req, res) => {
-  const { status } = req.query;
+  const { status = 'pending' } = req.query;
   try {
-    let q = `SELECT dr.*, t.name as template_name, u.name as requester_name
+    let q = `SELECT dr.*, COALESCE(t.name, '[Deleted]') as template_name, u.name as requester_name
              FROM delete_requests dr
-             JOIN templates t ON t.id = dr.template_id
+             LEFT JOIN templates t ON t.id = dr.template_id
              JOIN users u ON u.id = dr.requested_by`;
     const params = [];
-    if (status) { q += ' WHERE dr.status = ?'; params.push(status); }
+    if (status !== 'all') { q += ' WHERE dr.status = ?'; params.push(status); }
     q += ' ORDER BY dr.created_at DESC';
 
     const [rows] = await db.query(q, params);

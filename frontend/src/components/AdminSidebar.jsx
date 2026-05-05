@@ -22,6 +22,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
   const navItems = [
     { id: 'users', label: 'User Management', icon: <Users size={18} /> },
     { id: 'deletion-requests', label: 'Deletion Requests', icon: <Trash2 size={18} /> },
+    { id: 'template-delete', label: 'Template Delete', icon: <Trash2 size={18} /> },
     { id: 'activity-logs', label: 'Activity Logs', icon: <History size={18} /> },
     { id: 'settings', label: 'Settings', icon: <Settings size={18} /> },
   ];

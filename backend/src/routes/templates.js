@@ -61,7 +61,7 @@ router.post(
 
       if (fields.length > 0) {
         const fieldValues = fields.map((f, i) => [
-          templateId, f.label, f.type,
+          templateId, f.label || '', f.type || 'short_text',
           f.placeholder || null, f.is_required ? 1 : 0,
           f.default_value || null,
           f.options ? JSON.stringify(f.options) : null,
@@ -160,17 +160,18 @@ router.put('/:id', auth, async (req, res) => {
         const f = fields[i];
         const pos = f.position !== undefined ? f.position : i;
         const opts = f.options ? JSON.stringify(f.options) : null;
+        const fieldType = f.type || 'short_text';
         if (f.id) {
           await conn.query(
             `UPDATE template_fields SET label=?, type=?, placeholder=?, is_required=?, default_value=?, options=?, position=?
              WHERE id=? AND template_id=?`,
-            [f.label, f.type, f.placeholder||null, f.is_required?1:0, f.default_value||null, opts, pos, f.id, req.params.id]
+            [f.label, fieldType, f.placeholder||null, f.is_required?1:0, f.default_value||null, opts, pos, f.id, req.params.id]
           );
         } else {
           await conn.query(
             `INSERT INTO template_fields (template_id, label, type, placeholder, is_required, default_value, options, position)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [req.params.id, f.label, f.type, f.placeholder||null, f.is_required?1:0, f.default_value||null, opts, pos]
+            [req.params.id, f.label, fieldType, f.placeholder||null, f.is_required?1:0, f.default_value||null, opts, pos]
           );
         }
       }
@@ -198,15 +199,30 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/templates/:id — Admin only
+// DELETE /api/templates/:id — Admin only (cascades all related data)
 router.delete('/:id', auth, requireAdmin, async (req, res) => {
+  const conn = await db.getConnection();
   try {
-    await db.query('UPDATE templates SET is_deleted = 1 WHERE id = ?', [req.params.id]);
+    await conn.beginTransaction();
+    // Delete all associated data values
+    await conn.query(`DELETE tdv FROM template_data_values tdv INNER JOIN template_data td ON td.id = tdv.data_id WHERE td.template_id = ?`, [req.params.id]);
+    // Delete all data entries
+    await conn.query('DELETE FROM template_data WHERE template_id = ?', [req.params.id]);
+    // Delete all fields
+    await conn.query('DELETE FROM template_fields WHERE template_id = ?', [req.params.id]);
+    // Delete pending delete requests
+    await conn.query('DELETE FROM delete_requests WHERE template_id = ?', [req.params.id]);
+    // Finally delete the template itself
+    await conn.query('DELETE FROM templates WHERE id = ?', [req.params.id]);
+    await conn.commit();
     await logActivity(req.user.id, 'template_deleted', 'template', req.params.id);
     return res.json({ message: 'Template deleted' });
   } catch (err) {
+    await conn.rollback();
     console.error(err);
     return res.status(500).json({ error: 'Server error' });
+  } finally {
+    conn.release();
   }
 });
 

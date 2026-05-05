@@ -11,6 +11,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [allTemplates, setAllTemplates] = useState([]);
 
   // new user form state
   const [showAddUser, setShowAddUser] = useState(false);
@@ -21,7 +22,11 @@ export default function AdminPanel() {
   };
 
   const fetchRequests = async () => {
-    try { const res = await api.get('/delete-requests'); setRequests(res.data); } catch(e) {}
+    try { const res = await api.get('/delete-requests?status=pending'); setRequests(res.data); } catch(e) {}
+  };
+
+  const fetchAllTemplates = async () => {
+    try { const res = await api.get('/templates'); setAllTemplates(res.data); } catch(e) {}
   };
 
   const fetchLogs = async () => {
@@ -33,6 +38,7 @@ export default function AdminPanel() {
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'deletion-requests') fetchRequests();
     if (activeTab === 'activity-logs') fetchLogs();
+    if (activeTab === 'template-delete') fetchAllTemplates();
   }, [activeTab, user]);
 
   if (user?.role !== 'admin') {
@@ -97,7 +103,15 @@ export default function AdminPanel() {
     try {
       await api.put(`/delete-requests/${id}/${action}`);
       fetchRequests();
-    } catch (e) { alert("Error processing request"); }
+    } catch (e) { alert('Error processing request'); }
+  };
+
+  const handleDeleteTemplate = async (id, name) => {
+    if (!window.confirm(`Permanently delete "${name}" and ALL its data? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/templates/${id}`);
+      setAllTemplates(prev => prev.filter(t => t.id !== id));
+    } catch (e) { alert(e.response?.data?.error || 'Error deleting template'); }
   };
 
   const getInitials = (name) => {
@@ -126,12 +140,14 @@ export default function AdminPanel() {
             <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'deletion-requests' && 'Pending Deletions'}
+              {activeTab === 'template-delete' && 'Template Delete'}
               {activeTab === 'activity-logs' && 'Activity Logs'}
               {activeTab === 'settings' && 'System Settings'}
             </h1>
             <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>
               {activeTab === 'users' && 'Manage platform access, roles, and user statuses.'}
               {activeTab === 'deletion-requests' && 'Review and manage workspace template removal requests.'}
+              {activeTab === 'template-delete' && 'Permanently delete templates and all their associated data.'}
               {activeTab === 'activity-logs' && 'System-wide audit trail of user and entity actions.'}
               {activeTab === 'settings' && 'Configure workspace behaviour, security policies, and data management.'}
             </p>
@@ -284,6 +300,52 @@ export default function AdminPanel() {
                 ))}
               </div>
             </>
+          )}
+          {activeTab === 'template-delete' && (
+            <div style={{ backgroundColor: 'var(--surface-container-lowest)', borderRadius: '12px', border: '1px solid var(--outline-variant)', overflow: 'hidden' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--outline-variant)', background: '#fff5f5' }}>
+                <p style={{ fontSize: '0.85rem', color: '#93000a', margin: 0, fontWeight: 500 }}>
+                  ⚠️ Deleting a template is <strong>permanent</strong>. All fields, entries, and associated data will be erased.
+                </p>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
+                  <thead style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--outline-variant)' }}>
+                    <tr>
+                      <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Color</th>
+                      <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Template Name</th>
+                      <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Fields</th>
+                      <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Entries</th>
+                      <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Created</th>
+                      <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textAlign: 'right' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allTemplates.length === 0 ? (
+                      <tr><td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No templates found.</td></tr>
+                    ) : allTemplates.map((t, i) => (
+                      <tr key={t.id} style={{ borderBottom: i === allTemplates.length - 1 ? 'none' : '1px solid var(--surface-variant)' }}>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <div style={{ width: '20px', height: '20px', borderRadius: '4px', backgroundColor: t.color || '#378ADD' }} />
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem', fontWeight: 600, color: '#0f172a', fontSize: '0.875rem' }}>{t.name}</td>
+                        <td style={{ padding: '1rem 1.5rem', color: '#475569', fontSize: '0.875rem' }}>{t.field_count ?? '-'}</td>
+                        <td style={{ padding: '1rem 1.5rem', color: '#475569', fontSize: '0.875rem' }}>{t.entry_count ?? '-'}</td>
+                        <td style={{ padding: '1rem 1.5rem', color: '#64748b', fontSize: '0.875rem' }}>{new Date(t.created_at).toLocaleDateString()}</td>
+                        <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                          <button
+                            onClick={() => handleDeleteTemplate(t.id, t.name)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', backgroundColor: '#ffdad6', color: '#93000a', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
 
           {activeTab === 'activity-logs' && (

@@ -28,7 +28,8 @@ function FileUploadZone({ fieldId, fieldType, value, onUpload, onClear }) {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const res = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
@@ -142,7 +143,7 @@ function FileUploadZone({ fieldId, fieldType, value, onUpload, onClear }) {
       {fileObj?.url && isImage && !uploading && (
         <div style={{ marginTop: '0.5rem' }}>
           <img
-            src={`http://localhost:4000${fileObj.url}`}
+            src={`${(import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '')}${fileObj.url}`}
             alt={fileObj.name}
             style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '8px', objectFit: 'contain', border: '1px solid var(--color-border)' }}
           />
