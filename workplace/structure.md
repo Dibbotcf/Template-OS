@@ -26,7 +26,8 @@ f:\Antigravity Projects\TCF TEMPLATE\
 ├── workplace/                          ← 📁 Project documentation (this folder)
 │   ├── start.md                        ← Daily startup guide & credentials
 │   ├── gittovps.md                     ← Git → cPanel deployment steps
-│   └── structure.md                    ← This file — full project reference
+│   ├── structure.md                    ← This file — full project reference
+│   └── description.md                  ← High-level project overview
 │
 ├── backend/                            ← Node.js / Express API
 │   ├── src/
@@ -368,3 +369,4 @@ All routes except `/auth/login` require: `Authorization: Bearer <token>`
 | 2026-05-05 | TemplateBuilder: grid row/column naming + Add Row/Column | `TemplateBuilder.jsx` |
 | 2026-05-05 | DynamicFormModal: proper rendering for all field types (grids, rating, scale) | `DynamicFormModal.jsx` |
 | 2026-05-05 | TemplateBuilder: type normalization on load (empty → short_text) | `TemplateBuilder.jsx` |
+| 2026-05-05 | Added `description.md` to workplace documentation | `description.md` |
